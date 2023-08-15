@@ -5,7 +5,7 @@ from airflow.operators.python import PythonOperator
 
 from schools_etl_parts import (
     download_raw_data,
-    save_data_to_s3,
+    save_data_to_azure_data_lake,
     process_raw_data_to_silver,
     transform_silver_data,
 )
@@ -36,8 +36,12 @@ download_raw_data = PythonOperator(
 
 save_raw_data_to_s3 = PythonOperator(
     task_id="save_raw_data_to_s3",
-    python_callable=save_data_to_s3,
-    op_kwargs={"layer_name": "raw_data", "execution_date": "{{ ds }}"},
+    python_callable=save_data_to_azure_data_lake,
+    op_kwargs={
+        "layer_name": "raw-data",
+        "execution_date": "{{ ds }}",
+        "file_format": "json",
+    },
     dag=dag,
 )
 
@@ -50,8 +54,8 @@ process_raw_data_to_silver = PythonOperator(
 
 save_silver_data_to_s3 = PythonOperator(
     task_id="save_silver_data_to_s3",
-    python_callable=save_data_to_s3,
-    op_kwargs={"layer_name": "silver_data", "execution_date": "{{ ds }}"},
+    python_callable=save_data_to_azure_data_lake,
+    op_kwargs={"layer_name": "silver-data", "execution_date": "{{ ds }}"},
     dag=dag,
 )
 
@@ -64,8 +68,8 @@ transform_silver_data = PythonOperator(
 
 save_gold_data_to_s3 = PythonOperator(
     task_id="save_gold_data_to_s3",
-    python_callable=save_data_to_s3,
-    op_kwargs={"layer_name": "gold_data", "execution_date": "{{ ds }}"},
+    python_callable=save_data_to_azure_data_lake,
+    op_kwargs={"layer_name": "gold-data", "execution_date": "{{ ds }}"},
     dag=dag,
 )
 

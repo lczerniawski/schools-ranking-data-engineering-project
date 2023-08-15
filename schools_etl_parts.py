@@ -1,14 +1,18 @@
 import os.path
 
-import boto3
 import numpy as np
 import pandas as pd
 import requests
 import json
 
+from azure.storage.filedatalake import DataLakeServiceClient
+
 attom_data_api_key = ""
-aws_access_key_id = ""
-aws_secret_access_key = ""
+azure_data_lake_account_name = ""
+azure_data_lake_account_url = (
+    f"https://{azure_data_lake_account_name}.dfs.core.windows.net"
+)
+azure_data_lake_account_key = ""
 
 
 def download_raw_data(**context):
@@ -24,31 +28,32 @@ def download_raw_data(**context):
     response.raise_for_status()
     data = response.json()
 
-    if not os.path.exists("raw_data"):
-        os.makedirs("raw_data")
+    if not os.path.exists("raw-data"):
+        os.makedirs("raw-data")
 
     execution_date = context["ds"]
-    with open(f"raw_data/schools-report-{execution_date}.json", "w") as outfile:
+    with open(f"raw-data/schools-report-{execution_date}.json", "w") as outfile:
         json.dump(data, outfile)
 
 
-def save_data_to_s3(execution_date, layer_name):
-    s3 = boto3.client(
-        "s3",
-        aws_access_key_id=aws_access_key_id,
-        aws_secret_access_key=aws_secret_access_key,
+def save_data_to_azure_data_lake(execution_date, layer_name, file_format="csv"):
+    azure_data_lake = DataLakeServiceClient(
+        azure_data_lake_account_url, credential=azure_data_lake_account_key
+    )
+    file_system_client = azure_data_lake.get_file_system_client(file_system=layer_name)
+    file_client = file_system_client.create_file(
+        f"schools-report-{execution_date}.{file_format}"
     )
 
-    s3.upload_file(
-        f"{layer_name}/schools-report-{execution_date}.json",
-        "project-schools-bucket",
-        f"{layer_name}/schools-report-{execution_date}.json",
-    )
+    with open(
+        f"{layer_name}/schools-report-{execution_date}.{file_format}", "rb"
+    ) as data:
+        file_client.upload_data(data, overwrite=True)
 
 
 def process_raw_data_to_silver(**context):
     execution_date = context["ds"]
-    with open(f"raw_data/schools-report-{execution_date}.json") as json_file:
+    with open(f"raw-data/schools-report-{execution_date}.json") as json_file:
         json_data = json.load(json_file)
 
     schools = json_data["schools"]
@@ -79,16 +84,16 @@ def process_raw_data_to_silver(**context):
 
         schools_list.append(refined_school)
 
-    if not os.path.exists("silver_data"):
-        os.makedirs("silver_data")
+    if not os.path.exists("silver-data"):
+        os.makedirs("silver-data")
 
     df = pd.json_normalize(schools_list)
-    df.to_csv(f"silver_data/schools-report-{execution_date}.csv", index=False)
+    df.to_csv(f"silver-data/schools-report-{execution_date}.csv", index=False)
 
 
 def transform_silver_data(**context):
     execution_date = context["ds"]
-    df = pd.read_csv(f"silver_data/schools-report-{execution_date}.csv")
+    df = pd.read_csv(f"silver-data/schools-report-{execution_date}.csv")
     school_rating_to_int_mapping = {
         "A+": 18,
         "A ": 17,
@@ -149,7 +154,7 @@ def transform_silver_data(**context):
         school_rating_reverse_mapping
     )
 
-    if not os.path.exists("gold_data"):
-        os.makedirs("gold_data")
+    if not os.path.exists("gold-data"):
+        os.makedirs("gold-data")
 
-    df_final.to_csv(f"gold_data/schools-report-{execution_date}.csv")
+    df_final.to_csv(f"gold-data/schools-report-{execution_date}.csv")
