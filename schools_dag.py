@@ -34,8 +34,8 @@ download_raw_data = PythonOperator(
     dag=dag,
 )
 
-save_raw_data_to_s3 = PythonOperator(
-    task_id="save_raw_data_to_s3",
+save_raw_data_to_azure_data_lake = PythonOperator(
+    task_id="save_raw_data_to_azure_data_lake",
     python_callable=save_data_to_azure_data_lake,
     op_kwargs={
         "layer_name": "raw-data",
@@ -52,8 +52,8 @@ process_raw_data_to_silver = PythonOperator(
     dag=dag,
 )
 
-save_silver_data_to_s3 = PythonOperator(
-    task_id="save_silver_data_to_s3",
+save_silver_data_to_azure_data_lake = PythonOperator(
+    task_id="save_silver_data_to_azure_data_lake",
     python_callable=save_data_to_azure_data_lake,
     op_kwargs={"layer_name": "silver-data", "execution_date": "{{ ds }}"},
     dag=dag,
@@ -66,18 +66,18 @@ transform_silver_data = PythonOperator(
     dag=dag,
 )
 
-save_gold_data_to_s3 = PythonOperator(
-    task_id="save_gold_data_to_s3",
+save_gold_data_to_azure_data_lake = PythonOperator(
+    task_id="save_gold_data_to_azure_data_lake",
     python_callable=save_data_to_azure_data_lake,
     op_kwargs={"layer_name": "gold-data", "execution_date": "{{ ds }}"},
     dag=dag,
 )
 
 (
-    download_raw_data
-    >> save_raw_data_to_s3
-    >> process_raw_data_to_silver
-    >> save_silver_data_to_s3
-    >> transform_silver_data
-    >> save_gold_data_to_s3
+        download_raw_data
+        >> save_raw_data_to_azure_data_lake
+        >> process_raw_data_to_silver
+        >> save_silver_data_to_azure_data_lake
+        >> transform_silver_data
+        >> save_gold_data_to_azure_data_lake
 )
