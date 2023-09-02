@@ -1,9 +1,9 @@
 # Schools Ranking Data Engineering Project
 
-> The goal of this project was to create a data pipeline that will allow us to rank schools based on their rating. 
-> Data sourced is [Attom](https://api.developer.attomdata.com/home) API that allows us to search for schools based on geocode.
-> The geocode used in this example solution is Michigan	state, but it can be easily configured to be any other state. 
-> The data is cleaned and transformed using a Python Pandas library, and is stored in Azure Data Lake. DAG is created using Airflow.
+The goal of this project was to create a data pipeline that will allow us to rank schools based on their rating. 
+Data sourced is [Attom](https://api.developer.attomdata.com/home) API that allows us to search for schools based on geocode.
+The geocode used in this example solution is Michigan	state, but it can be easily configured to be any other state. 
+The data is cleaned and transformed using a Python Pandas library, and is stored in Azure Data Lake. DAG is created using Airflow.
 
  
 ## Overview
